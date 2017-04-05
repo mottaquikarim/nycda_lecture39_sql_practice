@@ -37,9 +37,31 @@ app.post('/user', (req, res, next) => {
         });
 });
 
+app.post('/employee', (req, res, next) => {
+    console.log('here');
+
+    db.all('SELECT * FROM Company')
+        .then(() => {
+            return db.run("INSERT INTO Company (name, age, address, salary) values (?, ?, ?, ?)", ['Taq', 26, 'adfasdf', 0.01])
+        })
+        .then((user) => {
+            console.log(user);
+
+            // *SUPER IMPORTANT* always broadcast to update the UI
+            SocketInst.broadcast('LOAD_BUFFER');
+            // END 
+
+            res.header('Content-Type', 'aoplication/json');
+            res.send({ user });
+        })
+        .catch((e) => {
+            res.status(401);
+        });
+});
+
 Promise.resolve()
     .then(() => db.open(DB_NAME, { Promise }))
-    //.then(() => db.migrate({ force: 'last' }))
+    .then(() => db.migrate({ force: 'last' }))
     .then(() => app.listen(port))
     .then(() => {
         console.log(`Server started on port ${port}`)

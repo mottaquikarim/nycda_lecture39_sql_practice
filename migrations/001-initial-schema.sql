@@ -1,3 +1,13 @@
 -- UP
+CREATE TABLE Company(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    age INTEGER NOT NULL,
+    address CHAR(50) NOT NULL,
+    salary REAL NOT NULL
+);
+
 
 -- DOWN
+
+DROP TABLE Company;
