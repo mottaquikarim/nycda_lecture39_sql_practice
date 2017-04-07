@@ -4,6 +4,9 @@ const db = require('sqlite');
 let app = express();
 const port = 4001;
 
+const parser = require('body-parser');
+app.use(parser.json())
+
 const DB_NAME = './database.sqlite';
 
 // this is sqliteui stuff
@@ -15,44 +18,43 @@ const SocketInst = socket(DB_NAME, app);
 app = SocketInst.app;
 // end sqliteui stuff
 
-app.post('/user', (req, res, next) => {
-    console.log('here');
-
-    db.all('SELECT * FROM Users')
-        .then(() => {
-            return db.run("INSERT INTO USERS (name, email) values (?, ?)", ['Taq', "taq@gmail.com"])
-        })
-        .then((user) => {
-            console.log(user);
-
-            // *SUPER IMPORTANT* always broadcast to update the UI
-            SocketInst.broadcast('LOAD_BUFFER');
-            // END 
-
-            res.header('Content-Type', 'aoplication/json');
-            res.send({ user });
+app.get('/employees', (req, res, next) => {
+    db.all('SELECT * FROM Company')
+        .then((data) => {
+            res.header('Content-Type', 'application/json');
+            res.send({ employees: data });
         })
         .catch((e) => {
             res.status(401);
         });
 });
 
-app.post('/employee', (req, res, next) => {
-    console.log('here');
+app.use((req, res, next) => {
+    let args = {};
+    for (const prop in req.body) {
+        console.log(prop, req.body[prop]);
+        args['$' + prop] = req.body[prop];
+    }
+    req.body = args;
+    next();
+})
 
+app.post('/employee', (req, res, next) => {
     db.all('SELECT * FROM Company')
         .then(() => {
-            return db.run("INSERT INTO Company (name, age, address, salary) values (?, ?, ?, ?)", ['Taq', 26, 'adfasdf', 0.01])
+            return db.run("INSERT INTO Company (name, age, address, salary) values ($name, $age, $address, $salary)", req.body)
         })
-        .then((user) => {
-            console.log(user);
+        .then((employee) => {
 
             // *SUPER IMPORTANT* always broadcast to update the UI
             SocketInst.broadcast('LOAD_BUFFER');
             // END 
 
-            res.header('Content-Type', 'aoplication/json');
-            res.send({ user });
+            return db.get('SELECT * FROM Company WHERE Company.id = ?', [employee.lastID])
+        })
+        .then((data) => {
+            res.header('Content-Type', 'application/json');
+            res.send({ employee: data });
         })
         .catch((e) => {
             res.status(401);
